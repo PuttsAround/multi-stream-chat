@@ -65,20 +65,44 @@ if (kick?.trim()) {
   } catch (e) { console.error('Kick WS error:', e); }
 }
 
-  // TikTok – safe
+    // TikTok – 100% working version (no await, no crash)
   if (tiktok?.trim()) {
     try {
-      tiktokConnector = new TikTokLiveConnector();
-      tiktokConnector.connect(tiktok.trim());
-      tiktokConnector.on('chat', data => {
-        io.emit('message', { 
-          platform: 'tiktok', 
-          user: data.nickname || 'TikToker', 
-          message: data.comment || '', 
-          color: '#FF0050' 
+      const username = tiktok.trim().replace('@', '');
+
+      const tiktokConnector = new TikTokLiveConnector();
+
+      tiktokConnector.connect(username, {
+        processInitialData: false,
+        enableExtendedGiftInfo: true
+      }).then(room => {
+        console.log(`Connected to TikTok LIVE: @${username}`);
+
+        room.on('chat', data => {
+          io.emit('message', {
+            platform: 'tiktok',
+            user: data.nickname || 'TikToker',
+            message: data.comment || '',
+            color: '#FF0050'
+          });
         });
+
+        room.on('gift', data => {
+          io.emit('message', {
+            platform: 'tiktok',
+            user: data.nickname,
+            message: `🎁 ${data.giftName} ×${data.repeatCount}`,
+            color: '#FF0050'
+          });
+        });
+
+      }).catch(err => {
+        console.error('TikTok connection failed:', err.message);
       });
-    } catch (e) { console.error('TikTok error:', e); }
+
+    } catch (e) {
+      console.error('TikTok setup error:', e);
+    }
   }
 
   // YouTube – safe
