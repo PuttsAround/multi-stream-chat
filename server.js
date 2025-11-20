@@ -37,21 +37,34 @@ function connectAll(twitch = '', youtube = '', kick = '', tiktok = '') {
     } catch (e) { console.error('Twitch error:', e); }
   }
 
-  // Kick – now safe even if empty
-  if (kick?.trim()) {
-    try {
-      kickChat = new KickWebSocket({ debug: false });
-      kickChat.connect(kick.trim());
-      kickChat.on('ChatMessage', data => {
-        io.emit('message', { 
-          platform: 'kick', 
-          user: data.sender?.username || 'KickUser', 
-          message: data.content || '', 
-          color: '#00FF00' 
-        });
-      });
-    } catch (e) { console.error('Kick error:', e); }
-  }
+ // Kick – pure WebSocket, no package needed
+if (kick?.trim()) {
+  try {
+    const kickUsername = kick.trim().toLowerCase();
+    const ws = new WebSocket(`wss://ws.kick.com/chatroom/${kickUsername}`);
+
+    ws.on('open', () => console.log(`Connected to Kick chat: ${kickUsername}`));
+
+    ws.on('message', (data) => {
+      try {
+        const msg = JSON.parse(data);
+        if (msg.event === 'chat_message') {
+          const content = msg.data.content;
+          const username = msg.data.sender.username;
+          io.emit('message', {
+            platform: 'kick',
+            user: username,
+            message: content,
+            color: '#00FF00'
+          });
+        }
+      } catch (e) {}
+    });
+
+    ws.on('close', () => setTimeout(() => connectAll(twitch, youtube, kick, tiktok), 5000));
+    ws.on('error', () => {});
+  } catch (e) { console.error('Kick WS error:', e); }
+}
 
   // TikTok – safe
   if (tiktok?.trim()) {
