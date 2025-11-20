@@ -4,6 +4,7 @@ const socketIo = require('socket.io');
 const tmi = require('tmi.js');
 const { TikTokLiveConnector } = require('tiktok-live-connector');
 const fetch = require('node-fetch');
+const ioClient = require('socket.io-client');
 
 const app = express();
 const server = http.createServer(app);
@@ -65,45 +66,37 @@ if (kick?.trim()) {
   } catch (e) { console.error('Kick WS error:', e); }
 }
 
-    // TikTok – 100% working version (no await, no crash)
-  if (tiktok?.trim()) {
-    try {
-      const username = tiktok.trim().replace('@', '');
+ const ioClient = require('socket.io-client');
 
-      const tiktokConnector = new TikTokLiveConnector();
+// TikTok – via the reliable self-hosted reader
+if (tiktok?.trim()) {
+  try {
+    const username = tiktok.trim().replace('@', '');
+    const tiktokSocket = ioClient.connect('https://tiktok-reader.onrender.com'); // <-- your TikTok backend URL
 
-      tiktokConnector.connect(username, {
-        processInitialData: false,
-        enableExtendedGiftInfo: true
-      }).then(room => {
-        console.log(`Connected to TikTok LIVE: @${username}`);
+    tiktokSocket.emit('joinRoom', username);
 
-        room.on('chat', data => {
-          io.emit('message', {
-            platform: 'tiktok',
-            user: data.nickname || 'TikToker',
-            message: data.comment || '',
-            color: '#FF0050'
-          });
-        });
-
-        room.on('gift', data => {
-          io.emit('message', {
-            platform: 'tiktok',
-            user: data.nickname,
-            message: `🎁 ${data.giftName} ×${data.repeatCount}`,
-            color: '#FF0050'
-          });
-        });
-
-      }).catch(err => {
-        console.error('TikTok connection failed:', err.message);
+    tiktokSocket.on('chat', (data) => {
+      io.emit('message', {
+        platform: 'tiktok',
+        user: data.userNickName || 'TikToker',
+        message: data.comment || '',
+        color: '#FF0050'
       });
+    });
 
-    } catch (e) {
-      console.error('TikTok setup error:', e);
-    }
+    tiktokSocket.on('gift', (data) => {
+      io.emit('message', {
+        platform: 'tiktok',
+        user: data.userNickName,
+        message: `🎁 ${data.giftName} x${data.repeatCount}`,
+        color: '#FF0050'
+      });
+    });
+  } catch (e) {
+    console.error('TikTok proxy error:', e);
   }
+}
 
   // YouTube – safe
   if (youtube?.trim()) {
