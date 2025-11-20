@@ -2,7 +2,6 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const tmi = require('tmi.js');
-const { KickWebSocket } = require('kick-wss');
 const { TikTokLiveConnector } = require('tiktok-live-connector');
 const fetch = require('node-fetch');
 
