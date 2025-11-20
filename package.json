@@ -9,7 +9,8 @@
     "express": "^4.21.1",
     "socket.io": "^4.8.0",
     "tmi.js": "^1.8.5",
-    "kick-chat": "^1.0.4",
-    "tiktok-live-connector": "^1.1.2"
+    "kick-wss": "^1.0.4",
+    "tiktok-live-connector": "^1.1.2",
+    "node-fetch": "^3.3.2"
   }
 }

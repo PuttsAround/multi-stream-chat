@@ -2,9 +2,9 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const tmi = require('tmi.js');
-const { KickChat } = require('kick-chat');
+const { KickWebSocket } = require('kick-wss');
 const { TikTokLiveConnector } = require('tiktok-live-connector');
-const fetch = require('node-fetch');        // ← this was missing
+const fetch = require('node-fetch');
 
 const app = express();
 const server = http.createServer(app);
@@ -38,10 +38,15 @@ function connectAll(twitch = '', youtube = '', kick = '', tiktok = '') {
 
   // Kick
   if (kick) {
-    kickChat = new KickChat(kick);
-    kickChat.connect();
-    kickChat.on('chat', data => {
-      io.emit('message', { platform: 'kick', user: data.sender.username, message: data.message, color: '#00FF00' });
+    kickChat = new KickWebSocket({ debug: false });
+    kickChat.connect(kick);
+    kickChat.on('ChatMessage', data => {
+      io.emit('message', { 
+        platform: 'kick', 
+        user: data.sender.username, 
+        message: data.content, 
+        color: '#00FF00' 
+      });
     });
   }
 
@@ -54,7 +59,7 @@ function connectAll(twitch = '', youtube = '', kick = '', tiktok = '') {
     });
   }
 
-  // YouTube – fixed polling
+  // YouTube
   if (youtube) {
     let liveId = youtube;
     if (youtube.startsWith('@')) liveId = youtube.slice(1);
@@ -84,7 +89,7 @@ function connectAll(twitch = '', youtube = '', kick = '', tiktok = '') {
     };
 
     fetchYouTube();
-    ytInterval = setInterval(fetchYouTube, 6000); // 6 seconds is safer
+    ytInterval = setInterval(fetchYouTube, 6000);
   }
 }
 
